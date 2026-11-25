@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Gallery Carousel — Mobile (Framework E)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500&family=Inter:wght@600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  /* ─────────────────────────────────────────────────────────────
+     Framework E · visual banner variant2 — 갤러리 캐러셀 (Mobile)
+     Figma 11965:123913 · 디자인 기준 폭 390
+     (상태바 · 헤더는 이전 시안 16294:121000 의 화면 틀)
+
+     1) 전환 — 가로 슬라이드 (translateX). 다음: 현재 이미지가 왼쪽으로, 다음 이미지가 오른쪽에서
+        전환 옵션 — 화면 밖에서(기본, 시안 주석: "화면 밖에서 다음 이미지가 오른쪽에서 밀려들어옴")
+                    / 박스 안(이미지 박스에서 잘림)
+     2) 루프 — 마지막 ↔ 처음도 같은 방향으로 이어서 슬라이드
+     3) 자동 넘기기 — on/off (데모 패널)
+     4) 인디케이터 — 이미지 아래(py-28), 최대 4개. 시안 galleryIndicator (37×5)
+        · dot 5, 간격 6, #111 — 활성 80% / 비활성 30%
+        · 진행 방향에 이미지가 더 남아 있으면 활성 dot 은 끝이 아니라
+          끝에서 두 번째 칸에 머물고, 줄이 한 칸씩 밀린다
+        · 더 남은 쪽 끝 dot 은 작은 dot(4) 으로 "더 있음" 표시 (시안 4번째 dot)
+     ───────────────────────────────────────────────────────────── */
+  :root {
+    /* Spacing ---------------------------------------------------- */
+    --mid-6: 6px;
+    --mid-12: 12px;
+    --mid-16: 16px;
+    --mid-28: 28px;
+    --mid-36: 36px;
+    --mid-56: 56px;
+
+    --radius-sm: 6px;
+
+    /* Typography ------------------------------------------------- */
+    --fs-p4: 13px;     /* paragraph-4 */
+    --fs-p3: 14px;     /* paragraph-3 */
+    --fs-h3: 32px;     /* heading-3 */
+
+    /* Color ------------------------------------------------------ */
+    --bg-base: #fff;
+    --fg-primary: #111;
+    --fg-secondary: #6b6b6b;
+    --c-header: #372320;
+    --indicator: #111;
+
+    /* Font ------------------------------------------------------- */
+    --font-en: "DM Sans", "Pretendard", sans-serif;
+    --font-kr: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-logo: "Inter", sans-serif;
+
+    /* Indicator — 시안 galleryIndicator (37×5) ------------------- */
+    --ind-dot: 5px;
+    --ind-bar: 5px;            /* E 는 활성도 dot — 크기 같음, 진하기만 다름 */
+    --ind-small: 4px;
+    --ind-gap: var(--mid-6);
+    --ind-dim: 0.3;
+    --ind-on: 0.8;
+
+    /* Motion ----------------------------------------------------- */
+    --slide-dur: 500ms;
+    --slide-ease: cubic-bezier(0.33, 0, 0.2, 1);
+    --dot-dur: 300ms;
+
+    /* 슬라이드 사이 간격 — 박스 안 0 / 화면 밖에서 mid-16 */
+    --slide-gap: 0px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  button { font: inherit; background: none; border: 0; cursor: pointer; color: inherit; }
+  img { display: block; }
+
+  html { background: #f4f4f4; }
+  body { min-height: 100vh; font-family: var(--font-en); -webkit-font-smoothing: antialiased; }
+
+  .screen { width: 100%; max-width: 390px; min-height: 100vh; margin: 0 auto; background: var(--bg-base); overflow-x: clip; }
+
+  /* ── statusBar ─────────────────────────────────────────────── */
+  .status-bar { position: relative; height: 54px; background: var(--bg-base); }
+  .status-bar__time {
+    position: absolute; left: 0; top: 0; width: 138px; height: 54px;
+    display: flex; align-items: center; justify-content: center; padding-top: 2px;
+    font-family: -apple-system, "SF Pro Text", BlinkMacSystemFont, sans-serif;
+    font-weight: 590; font-size: 17px; line-height: 22px; color: #000;
+  }
+  .status-bar__levels { position: absolute; right: 0; top: 0; }
+
+  /* ── mobileH_header ────────────────────────────────────────── */
+  .header {
+    position: relative;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px; padding: 0 16px;
+    background: var(--bg-base);
+  }
+  .header__item {
+    display: flex; align-items: center; height: 48px; min-width: 48px;
+    font-size: var(--fs-p4); line-height: 1.6; text-transform: uppercase;
+    color: var(--c-header); text-decoration: none;
+    font-variation-settings: "opsz" 14;
+  }
+  .header__item--end { justify-content: flex-end; }
+  .header__logo {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    font-family: var(--font-logo); font-weight: 600; font-size: 20px; line-height: 28px;
+    color: var(--c-header); text-decoration: none; white-space: nowrap;
+  }
+
+  /* ── variant2 섹션 ──────────────────────────────────────────── */
+  .gallery-section {
+    display: flex; flex-direction: column; gap: var(--mid-36);
+    padding: var(--mid-56) var(--mid-16);
+    background: var(--bg-base);
+  }
+  .text-block {
+    display: flex; flex-direction: column; gap: var(--mid-12);
+    text-align: center; color: var(--fg-primary);
+    font-family: var(--font-en);
+    font-variation-settings: "opsz" 14;
+  }
+  .text-block__overline { font-size: var(--fs-p3); line-height: 1.6; font-weight: 400; }
+  .text-block__title { font-size: var(--fs-h3); line-height: 1.4; font-weight: 500; }
+  .text-block__desc { font-size: var(--fs-p3); line-height: 1.6; font-weight: 400; color: var(--fg-secondary); }
+
+  /* ── content: mediaArea + Indicator ────────────────────────── */
+  .content { display: flex; flex-direction: column; }
+
+  .carousel {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 358 / 268.5;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    touch-action: pan-y;
+    user-select: none; -webkit-user-select: none;
+  }
+  .carousel__viewport {
+    position: absolute; inset: 0; overflow: hidden;
+    -webkit-mask: url("assets/media-mask.svg") no-repeat 0 0 / 100% 100%;
+            mask: url("assets/media-mask.svg") no-repeat 0 0 / 100% 100%;
+  }
+  .carousel__track { display: flex; gap: var(--slide-gap); height: 100%; will-change: transform; }
+  .carousel__track.is-animating { transition: transform var(--slide-dur) var(--slide-ease); }
+  .carousel__slide { flex: 0 0 100%; height: 100%; position: relative; background: #ddd; }  /* 이미지 없을 때 placeholder */
+  .carousel__slide img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; object-position: 50% 25%;   /* 세로 사진은 위쪽(얼굴) 기준 크롭 — 4:3 시안 이미지는 영향 없음 */
+    pointer-events: none; -webkit-user-drag: none;
+  }
+
+  /* 전환 옵션 — 화면 밖에서 들어옴 (body[data-slide="screen"])
+     이미지 박스에서 자르지 않고 화면(390 프레임) 가장자리에서 자른다.
+     이미지 사이 간격 = 섹션 좌우 여백(mid-16) → 다음 이미지는 화면 오른쪽 끝 바로 밖에서 대기 */
+  body[data-slide="screen"] { --slide-gap: var(--mid-16); }
+  body[data-slide="screen"] .carousel { overflow: visible; border-radius: 0; }
+  body[data-slide="screen"] .carousel__viewport { overflow: visible; -webkit-mask: none; mask: none; }
+  body[data-slide="screen"] .carousel__slide { overflow: hidden; border-radius: var(--radius-sm); }
+
+  /* Indicator — py-28, 가운데 */
+  .indicator { display: flex; justify-content: center; padding: var(--mid-28) 0; }
+  .dots {
+    height: var(--ind-dot);
+    overflow: hidden;
+    border-radius: 2.5px;             /* 시안 clipPath rx 2.5 */
+    transition: width var(--dot-dur) var(--slide-ease);
+  }
+  .dots__track {
+    display: flex; align-items: center; gap: var(--ind-gap);
+    height: 100%;
+    transition: transform var(--dot-dur) var(--slide-ease);
+  }
+  .dot {
+    flex: 0 0 auto;
+    width: var(--ind-dot); height: var(--ind-dot);
+    border-radius: 9999px;
+    background: var(--indicator);
+    opacity: var(--ind-dim);
+    transition: width var(--dot-dur) var(--slide-ease), height var(--dot-dur) var(--slide-ease), opacity var(--dot-dur) ease;
+  }
+  .dot.is-small { width: var(--ind-small); height: var(--ind-small); }
+  .dot.is-active { width: var(--ind-bar); height: var(--ind-dot); opacity: var(--ind-on); }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root { --slide-dur: 1ms; --dot-dur: 1ms; }
+  }
+
+  /* ── 데모 패널 — 시안에 없는 요소. 삭제해도 무방 ───────────── */
+  .demo-nav {
+    position: fixed; top: 16px; right: 16px; z-index: 500;
+    display: grid; grid-template-columns: auto auto; gap: 6px 8px; align-items: center;
+    padding: 8px 10px;
+    border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 6px;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+    font-family: var(--font-kr); font-size: 11px; line-height: 1.4; color: #111;
+    white-space: nowrap;
+  }
+  .demo-nav.is-min > *:not(.demo-toggle) { display: none; }
+  .demo-toggle { grid-column: 1 / -1; justify-self: end; padding: 2px 6px; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 3px; color: #777; }
+  .demo-nav strong { font-size: 10px; letter-spacing: 0.04em; color: #999; text-transform: uppercase; }
+  .demo-seg { justify-self: start; display: flex; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 3px; overflow: hidden; }
+  .demo-seg button { padding: 4px 9px; color: #777; background: #fff; font-size: 11px; }
+  .demo-seg button + button { border-left: 1px solid rgba(0, 0, 0, 0.1); }
+  .demo-seg button.is-on { background: #111; color: #fff; font-weight: 600; }
+  .demo-nav select { font: inherit; padding: 2px 4px; border: 1px solid rgba(0, 0, 0, 0.15); border-radius: 3px; background: #fff; }
+  .demo-readout { grid-column: 1 / -1; padding-top: 4px; border-top: 1px solid rgba(0, 0, 0, 0.08); color: #777; font-variant-numeric: tabular-nums; }
+  .demo-readout b { color: #111; font-weight: 600; }
+  .demo-step { display: flex; gap: 4px; }
+  .demo-step button { padding: 3px 8px; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 3px; background: #fff; }
+</style>
+</head>
+<body>
+
+<main class="screen">
+  <!-- statusBar -->
+  <div class="status-bar" aria-hidden="true">
+    <div class="status-bar__time">9:41</div>
+    <img class="status-bar__levels" src="assets/status-levels.svg" width="140.5" height="54" alt="">
+  </div>
+
+  <!-- mobileH_header -->
+  <header class="header">
+    <a class="header__item" href="#">Menu</a>
+    <a class="header__item header__item--end" href="#">Bag [0]</a>
+    <a class="header__logo" href="#">BRAND</a>
+  </header>
+
+  <!-- variant2 -->
+  <section class="gallery-section">
+    <div class="text-block">
+      <p class="text-block__overline">Lorem ipsum</p>
+      <h2 class="text-block__title">Lorem ipsum dolor</h2>
+      <p class="text-block__desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Graecis praetorem, consuetudinum, maiores, tribus saluti reprehensa.</p>
+    </div>
+
+    <div class="content">
+      <div class="carousel" id="carousel" role="region" aria-roledescription="carousel" aria-label="갤러리">
+        <div class="carousel__viewport">
+          <div class="carousel__track" id="track"></div>
+        </div>
+        <p class="sr-only" aria-live="polite" id="live"></p>
+      </div>
+      <div class="indicator">
+        <div class="dots" id="dots" role="tablist" aria-label="슬라이드 선택">
+          <div class="dots__track" id="dotsTrack"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- 데모 패널 — 시안에 없는 요소 -->
+<nav class="demo-nav" id="demoNav">
+  <button type="button" class="demo-toggle" id="demoToggle" aria-label="패널 접기">–</button>
+  <strong>자동 넘기기</strong>
+  <div class="demo-seg" id="autoToggle">
+    <button type="button" data-auto="on">on</button>
+    <button type="button" data-auto="off">off</button>
+  </div>
+  <strong>전환</strong>
+  <div class="demo-seg" id="slideToggle">
+    <button type="button" data-slide="screen">화면 밖에서</button>
+    <button type="button" data-slide="box">박스 안</button>
+  </div>
+  <strong>간격</strong>
+  <select id="intervalSel" aria-label="자동 넘기기 간격">
+    <option value="2000">2초</option>
+    <option value="3000" selected>3초</option>
+    <option value="4000">4초</option>
+    <option value="5000">5초</option>
+  </select>
+  <strong>이미지 수</strong>
+  <select id="countSel" aria-label="이미지 수">
+    <option>2</option><option>3</option><option>4</option>
+    <option>5</option><option selected>6</option><option>8</option><option>10</option>
+  </select>
+  <strong>이동</strong>
+  <div class="demo-step">
+    <button type="button" id="prevBtn" aria-label="이전 이미지">‹ 이전</button>
+    <button type="button" id="nextBtn" aria-label="다음 이미지">다음 ›</button>
+  </div>
+  <div class="demo-readout" id="readout"></div>
+</nav>
+
+<script>
+(() => {
+  /* 슬라이드 이미지 — 1번은 시안 이미지, 2~6번은 추가 이미지.
+     이미지 수를 6보다 크게 고르면 처음부터 다시 순환 */
+  const IMAGES = [
+    'assets/media.png',
+    'assets/slide-2.jpg',
+    'assets/slide-3.jpg',
+    'assets/slide-4.jpg',
+    'assets/slide-5.jpg',
+    'assets/slide-6.jpg',
+  ];
+  const MAX_DOTS = 4;
+
+  const carousel = document.getElementById('carousel');
+  const track = document.getElementById('track');
+  const dotsEl = document.getElementById('dots');
+  const dotsTrack = document.getElementById('dotsTrack');
+  const live = document.getElementById('live');
+  const readout = document.getElementById('readout');
+
+  const state = {
+    count: 6,
+    index: 0,          // 실제 슬라이드 index (0 ~ count-1)
+    pos: 1,            // track 위치 (복제 포함: 0 = 마지막 복제, count+1 = 첫 복제)
+    winStart: 0,       // 인디케이터 창의 첫 index
+    animating: false,
+    auto: true,
+    interval: 3000,
+    timer: null,
+  };
+
+  /* 인디케이터 치수 — CSS 변수에서 읽음 */
+  const css = getComputedStyle(document.documentElement);
+  const px = name => parseFloat(css.getPropertyValue(name));
+  const IND = { dot: px('--ind-dot'), bar: px('--ind-bar'), small: px('--ind-small'), gap: px('--ind-gap') };
+
+  /* ── 빌드 ─────────────────────────────────────────────────── */
+  function slideHTML(i, clone) {
+    const src = IMAGES[i % IMAGES.length];
+    return `<div class="carousel__slide"${clone ? ' aria-hidden="true"' : ` role="group" aria-roledescription="slide" aria-label="${i + 1} / ${state.count}"`}>
+      <img src="${src}" alt="" draggable="false" onerror="this.remove()"></div>`;
+  }
+
+  function build() {
+    const n = state.count;
+    const loop = n > 1;
+    let html = loop ? slideHTML(n - 1, true) : '';
+    for (let i = 0; i < n; i++) html += slideHTML(i, false);
+    if (loop) html += slideHTML(0, true);
+    track.innerHTML = html;
+
+    dotsTrack.innerHTML = Array.from({ length: n }, (_, i) =>
+      `<button type="button" class="dot" role="tab" aria-label="${i + 1}번 이미지" data-i="${i}"></button>`).join('');
+    dotsEl.parentElement.hidden = n < 2;
+
+    state.index = 0;
+    state.winStart = 0;
+    state.pos = loop ? 1 : 0;
+    setTrack(false);
+    renderDots();
+  }
+
+  /* ── 트랙 ─────────────────────────────────────────────────── */
+  function setTrack(animate, dragPx = 0) {
+    track.classList.toggle('is-animating', animate);
+    // 한 칸 = 이미지 폭(100%) + 슬라이드 간격
+    track.style.transform = `translateX(calc(${-state.pos} * (100% + var(--slide-gap)) + ${dragPx}px))`;
+  }
+
+  function go(dir) {                       // dir: +1 다음, -1 이전
+    if (state.animating || state.count < 2) return;
+    state.animating = true;
+    state.pos += dir;
+    state.index = (state.index + dir + state.count) % state.count;
+    setTrack(true);
+    armSettle();
+    updateWindow(dir);
+    renderDots();
+  }
+
+  function goTo(i) {
+    if (state.animating || i === state.index) return;
+    const dir = i > state.index ? 1 : -1;
+    state.animating = true;
+    state.pos = i + 1;
+    state.index = i;
+    setTrack(true);
+    armSettle();
+    updateWindow(dir);
+    renderDots();
+  }
+
+  // 슬라이드 도착 처리 — transitionend 가 안 오는 경우(백그라운드 탭 등)를 대비해 타이머 폴백
+  let settleTimer = null;
+  function settle() {
+    clearTimeout(settleTimer);
+    if (!state.animating) return;
+    // 복제 슬라이드에 도착 → 진짜 슬라이드로 순간 이동
+    if (state.pos === 0) state.pos = state.count;
+    if (state.pos === state.count + 1) state.pos = 1;
+    setTrack(false);
+    state.animating = false;
+  }
+  track.addEventListener('transitionend', e => { if (e.target === track) settle(); });
+  function armSettle() {
+    clearTimeout(settleTimer);
+    const ms = parseFloat(css.getPropertyValue('--slide-dur')) || 500;
+    settleTimer = setTimeout(settle, ms + 80);
+  }
+
+  /* ── 인디케이터 창 (최대 4개) ─────────────────────────────────
+     진행 방향에 더 남은 이미지가 있으면 활성 dot 은 끝에서 두 번째 칸에 머문다. */
+  function updateWindow(dir) {
+    const n = state.count, slots = Math.min(n, MAX_DOTS), i = state.index;
+    if (n <= MAX_DOTS) { state.winStart = 0; return; }
+    let w = state.winStart;
+    if (dir > 0 && i === 0) w = 0;                          // 루프 — 처음으로
+    else if (dir < 0 && i === n - 1) w = n - slots;         // 루프 — 끝으로
+    else if (i > w + slots - 2) w = i - (slots - 2);        // 앞으로: 끝에서 두 번째 칸 유지
+    else if (i < w + 1) w = i - 1;                          // 뒤로: 앞에서 두 번째 칸 유지
+    state.winStart = Math.max(0, Math.min(n - slots, w));
+  }
+
+  function renderDots() {
+    const n = state.count, slots = Math.min(n, MAX_DOTS), w = state.winStart;
+    const moreAfter = w + slots < n;
+    const moreBefore = w > 0;
+
+    // 각 칸의 목표 너비 (활성 dot 5 / 작은 dot 4 / dot 5) — 이동량과 창 너비를 계산
+    const widths = [];
+    [...dotsTrack.children].forEach((d, i) => {
+      const active = i === state.index;
+      const small = !active && n > MAX_DOTS && ((moreAfter && i === w + slots - 1) || (moreBefore && i === w));
+      d.classList.toggle('is-active', active);
+      d.classList.toggle('is-small', small);
+      d.setAttribute('aria-selected', active);
+      d.tabIndex = active ? 0 : -1;
+      widths.push(active ? IND.bar : small ? IND.small : IND.dot);
+    });
+    const offset = k => widths.slice(0, k).reduce((a, b) => a + b, 0) + IND.gap * k;
+    const viewW = offset(w + slots - 1) + widths[w + slots - 1] - offset(w);
+    dotsTrack.style.transform = `translateX(${-offset(w)}px)`;
+    dotsEl.style.width = `${viewW}px`;
+
+    live.textContent = `${state.index + 1} / ${n}`;
+    readout.innerHTML = `현재 <b>${state.index + 1} / ${n}</b> · 활성 dot 칸 <b>${state.index - w + 1}</b> / ${slots}`;
+  }
+
+  dotsTrack.addEventListener('click', e => {
+    const b = e.target.closest('.dot');
+    if (!b) return;
+    goTo(+b.dataset.i);
+    restartAuto();
+  });
+
+  /* ── 자동 넘기기 ──────────────────────────────────────────── */
+  function startAuto() {
+    stopAuto();
+    if (state.auto && state.count > 1 && !document.hidden) {
+      state.timer = setInterval(() => go(1), state.interval);
+    }
+  }
+  function stopAuto() { clearInterval(state.timer); state.timer = null; }
+  function restartAuto() { if (state.auto) startAuto(); }
+  document.addEventListener('visibilitychange', () => document.hidden ? stopAuto() : startAuto());
+
+  /* ── 스와이프 / 드래그 ───────────────────────────────────── */
+  let drag = null;
+  carousel.addEventListener('pointerdown', e => {
+    if (state.animating || state.count < 2) return;
+    drag = { x: e.clientX, y: e.clientY, dx: 0, locked: null, id: e.pointerId };
+  });
+  carousel.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (drag.locked === null && Math.hypot(dx, dy) > 6) {
+      drag.locked = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      if (drag.locked === 'x') { carousel.setPointerCapture(e.pointerId); stopAuto(); }
+    }
+    if (drag.locked === 'x') { drag.dx = dx; setTrack(false, dx); }
+  });
+  const endDrag = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const { dx, locked } = drag;
+    drag = null;
+    if (locked !== 'x') return;
+    const threshold = carousel.clientWidth * 0.15;
+    if (dx <= -threshold) go(1);
+    else if (dx >= threshold) go(-1);
+    else { state.animating = true; setTrack(true); armSettle(); }   // 제자리로
+    restartAuto();
+  };
+  carousel.addEventListener('pointerup', endDrag);
+  carousel.addEventListener('pointercancel', endDrag);
+
+  /* 키보드 */
+  carousel.tabIndex = 0;
+  carousel.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') { go(1); restartAuto(); }
+    if (e.key === 'ArrowLeft') { go(-1); restartAuto(); }
+  });
+
+  /* ── 데모 패널 ────────────────────────────────────────────── */
+  const autoBtns = document.querySelectorAll('#autoToggle button');
+  function setAuto(on) {
+    state.auto = on;
+    autoBtns.forEach(b => b.classList.toggle('is-on', (b.dataset.auto === 'on') === on));
+    on ? startAuto() : stopAuto();
+  }
+  autoBtns.forEach(b => b.addEventListener('click', () => setAuto(b.dataset.auto === 'on')));
+  // 전환 방식 — box: 이미지 박스 안에서 밀림(기본) / screen: 화면 밖에서 들어옴
+  const slideBtns = document.querySelectorAll('#slideToggle button');
+  function setSlideMode(mode) {
+    if (state.animating) settle();
+    document.body.dataset.slide = mode;
+    slideBtns.forEach(b => b.classList.toggle('is-on', b.dataset.slide === mode));
+    setTrack(false);
+  }
+  slideBtns.forEach(b => b.addEventListener('click', () => setSlideMode(b.dataset.slide)));
+  setSlideMode('screen');   // 기본 = 화면 밖에서
+
+  document.getElementById('intervalSel').addEventListener('change', e => { state.interval = +e.target.value; restartAuto(); });
+  document.getElementById('countSel').addEventListener('change', e => { state.count = +e.target.value; state.animating = false; build(); restartAuto(); });
+  document.getElementById('prevBtn').addEventListener('click', () => { go(-1); restartAuto(); });
+  document.getElementById('nextBtn').addEventListener('click', () => { go(1); restartAuto(); });
+  const nav = document.getElementById('demoNav');
+  document.getElementById('demoToggle').addEventListener('click', e => {
+    const min = nav.classList.toggle('is-min');
+    e.currentTarget.textContent = min ? '+' : '–';
+  });
+
+  build();
+  setAuto(true);
+})();
+</script>
+</body>
+</html>

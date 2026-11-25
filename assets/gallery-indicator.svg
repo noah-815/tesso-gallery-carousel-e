@@ -1,0 +1,15 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="37" height="5" viewBox="0 0 37 5" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="galleryIndicator">
+<g clip-path="url(#clip0_0_27)">
+<path id="dot" opacity="0.8" d="M0 2.5C0 1.11929 1.11929 0 2.5 0V0C3.88071 0 5 1.11929 5 2.5V2.5C5 3.88071 3.88071 5 2.5 5V5C1.11929 5 0 3.88071 0 2.5V2.5Z" fill="#111111"/>
+<circle id="dot_2" opacity="0.3" cx="13.5" cy="2.5" r="2.5" fill="#111111"/>
+<circle id="dot_3" opacity="0.3" cx="24.5" cy="2.5" r="2.5" fill="#111111"/>
+<circle id="dot_4" opacity="0.3" cx="35" cy="2.5" r="2" fill="#111111"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_0_27">
+<rect width="37" height="5" rx="2.5" fill="white"/>
+</clipPath>
+</defs>
+</svg>
